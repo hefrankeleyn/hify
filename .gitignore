@@ -1,0 +1,137 @@
+# ============================================================
+# Hify .gitignore
+# 覆盖：Java(后端) / Node·Vue(前端) / IDE / macOS / Docker / 敏感配置
+# ============================================================
+
+# ----------------------- 后端：Java -----------------------
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# 编译产物
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+!**/gradle/wrapper/gradle-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+!**/src/main/resources/**
+
+# ----------------------- 前端：Node / Vue -----------------------
+node_modules/
+dist/
+dist-ssr/
+.output/
+.nuxt/
+.cache/
+.temp/
+.parcel-cache/
+*.local
+
+# 包管理器
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-integrity
+.pnp.*
+
+# 前端测试与覆盖率
+coverage/
+*.lcov
+.nyc_output/
+
+# Vite
+vite.config.*.timestamp-*
+
+# ----------------------- 日志 -----------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----------------------- 环境变量 / 敏感配置 -----------------------
+# 切勿提交密钥、模型 API Key、数据库口令等
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+application-local.yml
+application-local.yaml
+application-local.properties
+application-secret.*
+
+# ----------------------- Docker / 运行时数据 -----------------------
+# 数据必须挂 volume，容器内不存数据；本地挂载目录不入库
+docker/data/
+docker/volumes/
+data/
+volumes/
+mysql-data/
+redis-data/
+uploads/
+upload/
+
+# ----------------------- IDE / 编辑器 -----------------------
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+
+# VS Code（保留团队共享配置，忽略个人配置）
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# ----------------------- 操作系统 -----------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# ----------------------- AI 编码助手：Claude / Codex -----------------------
+# Claude Code：忽略个人本地配置，保留团队共享的 CLAUDE.md 与 settings.json
+.claude/settings.local.json
+.claude/*.local.json
+.claude/local/
+# Codex（OpenAI Codex CLI）：忽略本地配置与运行产物，保留共享的 AGENTS.md
+.codex/
+.codex.local/
+
+# ----------------------- 其他 -----------------------
+*.bak
+*.tmp
+*.swp
+*~
