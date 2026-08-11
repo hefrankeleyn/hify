@@ -1,25 +1,18 @@
-# CLAUDE.md
-
-本文件为 Claude Code 提供本项目的上下文。详细决策依据见 `../docs/`（以标注「基准」的文档为准）。
-
 ## 项目概述
 
-Hify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署，面向团队内部小规模使用（20–50 人同时在线）。
-
-**核心约束**：一个人开发 · 本地部署 · 内部 20–50 人。一切取舍以「最匹配当前约束」为准，而非追求技术最全。
+Hify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署，
+面向团队内部小规模使用（20-50 人同时在线）。
 
 ### 做什么
-
-- **多模型提供商管理**（OpenAI、Claude、Gemini、Ollama）
-- **Agent 创建与配置**（选模型、绑工具、设系统提示词）
-- **对话引擎**（流式响应、多轮对话、上下文管理）
-- **知识库 + RAG**（一期只支持 TXT 文档，固定长度分块）
-- **简版工作流**（JSON 配置，线性 + 条件分支，不做可视化拖拽）
-- **MCP 工具接入**（Agent 可通过 MCP 协议调用外部工具）
-- **管理控制台**（模型管理、Agent 配置、对话界面）
+- 多模型提供商管理（OpenAI、Claude、Gemini、Ollama）
+- Agent 创建与配置（选模型、绑工具、设系统提示词）
+- 对话引擎（流式响应、多轮对话、上下文管理）
+- 知识库 + RAG（一期只支持 TXT 文档，固定长度分块）
+- 简版工作流（JSON 配置，线性 + 条件分支，不做可视化拖拽）
+- MCP 工具接入（Agent 可通过 MCP 协议调用外部工具）
+- 管理控制台（模型管理、Agent 配置、对话界面）
 
 ### 不做什么
-
 - 不做可视化工作流拖拽编排
 - 不做多租户 / 权限体系
 - 不做插件市场、计费系统
@@ -27,75 +20,44 @@ Hify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署
 - 不做标注与微调
 
 ### 技术栈
-
-| 层 | 选型 |
-|----|------|
-| 后端 | Spring Boot 3.x + MyBatis-Plus + MySQL 8.x + Redis 7.x |
-| 前端 | Vue 3 + TypeScript + Vite + Element Plus |
-| 容器化 | Docker + Docker Compose |
+后端：Spring Boot 3.x + MyBatis-Plus + MySQL 8.x + Redis 7.x
+前端：Vue 3 + TypeScript + Vite + Element Plus
+容器化：Docker + Docker Compose
 
 ### 部署与运维预期
+- Docker Compose 本地一键部署，JVM 内存设上限（-Xmx512m）
+- 目标：20-50 人同时在线，峰值 3-5 QPS，瓶颈在 LLM 长连接
+- 缓存：Redis Cache-Aside（配置信息 + 会话上下文）
+- 监控：起步 Actuator + 日志，后期 Prometheus + Grafana
 
-- **部署**：Docker Compose 本地一键部署，JVM 内存设上限（`-Xmx512m`）
-- **目标**：20–50 人同时在线，峰值 3–5 QPS，**瓶颈在 LLM 长连接**
-- **缓存**：Redis Cache-Aside（配置信息 + 会话上下文）
-- **监控**：起步 Actuator + 日志，后期 Prometheus + Grafana
+## 架构设计
 
----
+### 应用架构
+模块化单体。一个 Spring Boot 应用，Maven 多模块组织。
 
-## 开发约定
+模块划分：
+- hify-provider：模型提供商管理
+- hify-agent：Agent 管理与配置
+- hify-chat：对话引擎
+- hify-mcp：MCP 工具管理与调用
+- hify-workflow：工作流编排与执行
+- hify-knowledge：知识库与 RAG
+- hify-common：公共模块
 
-> 以下为实现层要求，来自 `../docs/02-产品决策/03_Hify部署与运维（基准）.md`，写代码时需遵守。
+依赖原则：单向依赖，不循环。共用逻辑下沉 hify-common。
 
-### SSE 长连接（本项目的主要瓶颈）
+### 代码组织
+每个业务模块统一结构：controller / service / mapper / entity / dto / config
 
-1. 必须用 `SseEmitter`，**不用**阻塞式 `@ResponseBody`——否则每条连接独占一个 Tomcat 工作线程。
-2. 必须**自配** `ThreadPoolTaskExecutor`（建议 core 16 / max 64 / queue 128），**不用**默认的 `SimpleAsyncTaskExecutor`——它无上界地新建线程，50 并发下会一路建到 OOM。
-3. Nginx 必须 `proxy_buffering off` 并关闭 gzip，否则流式被攒批下发，失去打字机效果。
-4. 断连时在 `onCompletion` / `onTimeout` / `onError` 回调里释放资源，并**取消上游 LLM 请求**——否则用户关了页面 token 还在烧。
+分层规则：
+- Controller 只做参数校验和调用 Service，不写业务逻辑
+- Service 处理所有业务逻辑，包括事务管理
+- 跨模块调用走 Service 接口，不直接引用其他模块的 Mapper 或 Entity
+- Entity 不直接返回给前端，用 DTO 做转换
 
-### 失败降级（LLM 与外部依赖一定会失败）
-
-| 故障 | 期望行为 |
-|------|----------|
-| LLM 不可用 | 明确报错推给前端，不静默失败、不无限等待 |
-| MCP Server 不可用 | 工具清单走缓存兜底；调用失败作为工具结果交回模型，不中断对话 |
-| 向量检索失败 | 降级为不注入知识库，对话仍可用 |
-
-### 资源与数据
-
-- **容器内存限制 1GB，JVM `-Xmx512m`**。只限容器不设 `-Xmx`，JVM 会按宿主机内存算默认堆而被 OOM Kill。
-- MySQL 数据 / 上传文档 / 日志三个目录必须挂 volume，**容器内不存任何数据**。
-- schema 变更走 Flyway，不手工改表。
-- API Key **不明文进库、不进日志**，敏感配置走环境变量 / `.env`。
-- MySQL 字符集 `utf8mb4`；JVM / MySQL / 应用时区统一 `Asia/Shanghai`。
-
-### 编码规范
-
-- 能用 Lombok 注解就用（`@Data` / `@Slf4j` / `@RequiredArgsConstructor` / `@Builder` 等），不手写样板代码。
-- 注释写清楚：类、字段、方法（参数 / 返回值 / 异常）及方法内关键逻辑。
-- 方法内要有关键日志（`@Slf4j` 的 `log`）：覆盖入参、关键分支、异常与失败路径；正常流程 info/debug，异常 warn/error。
-
-### 模块边界（为后续拆分留口子）
-
-按业务能力分模块：`provider` / `agent` / `chat` / `knowledge` / `tool` / `workflow`。
-
-四条不能破的规矩：
-
-1. 模块间只通过接口调用，**不跨模块直连对方的 DAO / Mapper**
-2. 数据库层**不跨模块 JOIN**（3–5 QPS 下多查一次的代价可忽略）
-3. 状态外置，服务本身无状态（例外：知识库向量走进程内缓存，可从库重建）
-4. 文件存储走抽象接口
-
-> **留口子 ≠ 提前实现**：不提前引入 MQ、服务注册发现、RPC、分库。
-
----
-
-## 待定项
-
-| # | 待定项 | 状态 |
-|---|--------|------|
-| 1 | **SSE 超时时长** | 60 秒防僵尸连接 vs 带 RAG + 工具调用的生成可能超时被截断。倾向「超时 5 分钟 + 15 秒心跳」，**未拍板** |
-| 2 | **向量存储方案** | 倾向一期不引向量库：向量存 MySQL JSON，检索时内存暴力计算；超过约 20,000 条分段再重评 |
-| 3 | **Java 侧 AI 框架** | Spring AI / LangChain4j 二选一，倾向一期先不引，直接用 OpenAI 兼容客户端 |
-| 4 | **变更与回滚约定** | 未定义：镜像 tag 策略、schema 变更向前兼容、发布时 SSE 断连的前端提示 |
+### 外部调用处理
+- LLM 调用使用独立线程池，和业务请求隔离
+- Resilience4j 熔断，每个提供商独立熔断器
+- 同步调用 60s 超时，SSE 流式 120s 超时，连通性测试 10s
+- 按异常类型区分重试：网络抖动重试、认证失败不重试、限流退避重试
+- 流式响应使用 SseEmitter + 独立线程池，不引入 WebFlux
