@@ -21,18 +21,22 @@
 
 ## 二、三步启动
 
-> **想一条命令拉起全栈**，在仓库根目录用 `make`：
+> **想一条命令拉起全栈**，用 [`docs/bin/Makefile`](../bin/Makefile)。
+> 它不在仓库根目录，所以要带 `-C docs/bin`（或先 `cd docs/bin` 再敲 `make xxx`）：
 >
 > | 命令 | 作用 |
 > |---|---|
-> | `make start` | 依赖检查 → 构建 → 后台起后端 → 轮询健康检查 → 起前端。任何一步失败都会停下并给出修复命令 |
-> | `make stop` | 按 PID 文件停前后端，先 SIGTERM 再超时 SIGKILL |
-> | `make restart` | 先 stop 再 start |
-> | `make build` / `make clean` / `make package` | 构建 / 清理产物 / 打 tar.gz |
-> | `make` | 列出全部 target |
+> | `make -C docs/bin start` | 依赖检查 → 构建 → 后台起后端 → 轮询健康检查 → 起前端。任何一步失败都会停下并给出修复命令 |
+> | `make -C docs/bin stop` | 按 PID 文件停前后端，先 SIGTERM 再超时 SIGKILL |
+> | `make -C docs/bin restart` | 先 stop 再 start |
+> | `make -C docs/bin build` / `clean` / `package` | 构建 / 清理产物 / 打 tar.gz |
+> | `make -C docs/bin` | 列出全部 target |
+>
+> Makefile 里所有路径都由它自身位置反推仓库根，**与当前工作目录无关**——
+> 在仓库任何子目录下调用，`package` 的产物都落在仓库根的 `dist/`。
 >
 > 实现在 [`docs/bin/start.sh`](../bin/start.sh) 与 [`docs/bin/stop.sh`](../bin/stop.sh)，Makefile 只做转发。
-> `make start` 的前端跑在前台，`Ctrl+C` 会把前后端一起关掉；`stop.sh` 兜的是终端被直接关掉、
+> `start` 的前端跑在前台，`Ctrl+C` 会把前后端一起关掉；`stop.sh` 兜的是终端被直接关掉、
 > 陷阱来不及执行留下孤儿进程的情况。
 >
 > ⚠️ **它们都不负责启动依赖容器**，MySQL / Redis 仍需先按下面第 1 步起好。
