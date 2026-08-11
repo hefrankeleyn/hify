@@ -1,0 +1,122 @@
+### Hify - DemoItem 全链路测试
+### 用途:验证 BaseEntity / PageHelper / Result·PageResult / GlobalExceptionHandler /
+###      Jackson 时间序列化 / 参数校验(含 BindException) 这条全链路是否打通。
+### ⚠️ DemoItem 是演示代码,不是真实业务接口,真实业务模块落地后本文件也应删除。
+###
+### 用法(IntelliJ IDEA / WebStorm 内置 HTTP Client):
+### 从上到下依次点击每个请求左侧的 ▶ 运行。"创建"请求会把返回的 id 存进
+### {{demoItemId}} 变量,后续"详情/更新/删除"会自动带上,不用手动改。
+### 前置条件:本地 hify-app 已启动(默认 8080 端口),MySQL/Redis 已通过
+### docs/03-本地测试/docker-compose.yml 起好。
+
+@baseUrl = http://localhost:8080/api/v1
+
+### 0. 健康检查(确认应用已启动)
+GET {{baseUrl}}/health
+
+
+### 1. 创建演示项 —— 期望 code=200,data 为新记录 id
+POST {{baseUrl}}/demo-items
+Content-Type: application/json
+
+{
+  "name": "测试项A",
+  "status": 1
+}
+
+> {%
+    client.global.set("demoItemId", response.body.data);
+    client.test("创建成功", function() {
+        client.assert(response.body.code === 200, "code 应为 200");
+        client.assert(response.body.data > 0, "应返回新记录 id");
+    });
+%}
+
+
+### 2. 查询详情 —— 期望 name/status 与创建时一致,createdAt/updatedAt 为
+###    "yyyy-MM-dd'T'HH:mm:ss" 格式(无毫秒、无时间戳数组)
+GET {{baseUrl}}/demo-items/{{demoItemId}}
+
+> {%
+    client.test("详情正确且时间格式符合预期", function() {
+        client.assert(response.body.data.name === "测试项A", "name 应为 测试项A");
+        client.assert(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(response.body.data.createdAt),
+            "createdAt 应形如 2026-08-12T01:38:21");
+    });
+%}
+
+
+### 3. 更新演示项 —— 期望 code=200
+PUT {{baseUrl}}/demo-items/{{demoItemId}}
+Content-Type: application/json
+
+{
+  "name": "测试项A-已更新",
+  "status": 0
+}
+
+
+### 4. 再查一次 —— 期望 name/status 已变为更新后的值
+GET {{baseUrl}}/demo-items/{{demoItemId}}
+
+> {%
+    client.test("更新已生效", function() {
+        client.assert(response.body.data.name === "测试项A-已更新", "name 应已更新");
+        client.assert(response.body.data.status === 0, "status 应为 0");
+    });
+%}
+
+
+### 5. 分页查询 —— 期望 data 为数组,且 total/page/size 与 code/message 平级(PageResult 形状)
+GET {{baseUrl}}/demo-items?page=1&pageSize=20
+
+> {%
+    client.test("PageResult 结构正确", function() {
+        client.assert(Array.isArray(response.body.data), "data 应为数组");
+        client.assert(response.body.total !== undefined, "应有 total 字段");
+        client.assert(response.body.page === 1, "page 应回显为 1");
+        client.assert(response.body.size === 20, "size 应回显为 20");
+    });
+%}
+
+
+### 6. 创建校验失败(name 为空)—— 期望 code=1001(PARAM_INVALID),不是 500
+POST {{baseUrl}}/demo-items
+Content-Type: application/json
+
+{
+  "name": "",
+  "status": 1
+}
+
+> {%
+    client.test("参数校验拦住空 name", function() {
+        client.assert(response.body.code === 1001, "code 应为 1001");
+    });
+%}
+
+
+### 7. 分页参数越界(pageSize=9999)—— 期望 code=1001,验证 BindException 处理器
+###    (@Valid 修饰非 @RequestBody 的 PageQuery,校验失败抛的是 BindException,
+###     和请求 6 走的 MethodArgumentNotValidException 是两条不同异常路径)
+GET {{baseUrl}}/demo-items?page=1&pageSize=9999
+
+> {%
+    client.test("BindException 被正确处理成参数错误而不是 500", function() {
+        client.assert(response.body.code === 1001, "code 应为 1001,不是系统错误");
+    });
+%}
+
+
+### 8. 删除演示项(软删)—— 期望 code=200
+DELETE {{baseUrl}}/demo-items/{{demoItemId}}
+
+
+### 9. 删除后再查 —— 期望 code=1005(NOT_FOUND),验证软删除对查询生效
+GET {{baseUrl}}/demo-items/{{demoItemId}}
+
+> {%
+    client.test("软删除后查不到", function() {
+        client.assert(response.body.code === 1005, "code 应为 1005(NOT_FOUND)");
+    });
+%}

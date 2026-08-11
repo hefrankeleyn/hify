@@ -128,12 +128,13 @@ com.hify.{module}/
 | `chat` | `sse` `runtime` `domain` | SSE 生命周期 / 对话编排 / 领域对象 |
 | `workflow` | `definition` `executor` `domain` | 图解析 / 节点执行 / 领域对象 |
 
-**`hify-common` 不是业务模块，不适用扁平九包**，它固定为六包：
+**`hify-common` 不是业务模块，不适用扁平九包**，它固定为七包：
 
 ```
 com.hify.common/
 ├── result/       Result、PageResult —— 统一响应体（见 8.2）
 ├── dto/          PageQuery 等通用请求对象
+├── entity/       BaseEntity —— 公共 Entity 基类,不对应任何具体表,只被各模块 Entity 继承
 ├── exception/    ErrorCode、BizException、GlobalExceptionHandler
 ├── constant/     全局常量（ResultConstant 等）
 ├── util/         工具类、加解密（RedisUtil、SensitiveUtil 等）

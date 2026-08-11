@@ -4,6 +4,7 @@ import com.hify.common.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,12 +32,14 @@ import java.util.stream.Collectors;
  *   <li><b>Filter / Interceptor 里抛的异常</b>——早于 DispatcherServlet，进不了 advice。</li>
  * </ol>
  *
- * <p>⚠️ 当前只声明了三个 handler。其余 Web 层异常（{@code BindException} 即查询参数绑定失败、
- * {@code ConstraintViolationException}、{@code HttpMessageNotReadableException} 即 JSON 格式错、
+ * <p>⚠️ 当前声明了四个 handler。其余 Web 层异常（{@code ConstraintViolationException}、
+ * {@code HttpMessageNotReadableException} 即 JSON 格式错、
  * {@code HttpRequestMethodNotSupportedException}、{@code NoResourceFoundException}）
  * 都会落到 {@link #handleException} 里被报成「系统内部错误」并打 ERROR 全栈——
  * 这些其实是客户端的问题，需要时再按 {@link ErrorCode} 里已备好的
  * {@code PARAM_INVALID} / {@code METHOD_NOT_ALLOWED} / {@code NOT_FOUND} 补 handler。
+ * {@code BindException}（查询参数绑定失败，如 {@code @Valid} 修饰非 {@code @RequestBody} 的
+ * POJO 参数）已在第一个分页接口落地时补上，见 {@link #handleBindException}。
  */
 @Slf4j
 @RestControllerAdvice
@@ -89,7 +92,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 兜底处理一切未被上面两个 handler 接住的异常。
+     * 处理 {@code @Valid} 修饰的非 {@code @RequestBody} 参数（如 GET 请求隐式 {@code @ModelAttribute}
+     * 绑定的分页参数）校验失败。
+     * <p>⚠️ 和 {@link #handleMethodArgumentNotValidException} 是两条不同的异常路径：
+     * {@code @RequestBody @Valid}（JSON 请求体）校验失败抛 {@link MethodArgumentNotValidException}，
+     * 而非请求体的 POJO 参数（如 {@code @Valid PageQuery query} 绑定查询字符串）校验失败抛的是
+     * {@link BindException}——两者字段结构相同（都能取到 {@code FieldError} 列表），处理逻辑一致，
+     * 只是异常类型不同，Spring 没有把它们统一成一种。
+     *
+     * @param exception 绑定/校验异常，携带全部字段错误
+     * @param request   当前请求，仅用于取 URI 做日志上下文
+     * @return code 为 {@link ErrorCode#PARAM_INVALID} 的失败响应，不会为 {@code null}
+     */
+    @ExceptionHandler(BindException.class)
+    public Result<Void> handleBindException(BindException exception, HttpServletRequest request) {
+        String detail = buildFieldErrorDetail(exception.getFieldErrors());
+
+        log.warn("[PARAM] 参数绑定/校验不通过, uri={}, detail={}", request.getRequestURI(), detail);
+
+        return Result.fail(ErrorCode.PARAM_INVALID.getCode(), detail);
+    }
+
+    /**
+     * 兜底处理一切未被上面几个 handler 接住的异常。
      * <p>按 3.4 打 {@code error} 并带完整堆栈——走到这里说明是没预料到的故障，必须能查。
      *
      * @param exception 未预期异常

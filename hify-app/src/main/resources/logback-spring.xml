@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  环境差异化日志配置。
+  开发环境(默认,没有显式指定 profile 或 profile 不是 prod):控制台彩色输出。
+  生产环境(spring.profiles.active=prod):JSON 格式输出到文件,按天滚动,保留 30 天。
+
+  ⚠️ 日志格式沿用 application.yml 里 logging.pattern.console 已经定的精度——
+  日期+毫秒(yyyy-MM-dd HH:mm:ss.SSS),不能像"随手写"的格式那样只留 HH:mm:ss:
+  丢了日期,多天日志聚合起来根本分不清是哪天的;丢了毫秒,没法区分同一秒内的先后顺序。
+  traceId 占位符用 %X{traceId:-},:- 是"没有则输出空串"的兜底写法——应用刚启动、
+  还没处理过请求时(RequestLogFilter 还没来得及 MDC.put)打的日志不会出现字面量 "null"。
+
+  ⚠️ JSON 格式没有引入 logstash-logback-encoder 这类三方编码器(不在技术栈白名单内),
+  用 Logback 原生 PatternLayoutEncoder 手工拼 JSON 字符串。这是有代价的:
+  %msg 和异常堆栈里的反斜杠、双引号、换行、制表符(异常堆栈的 "at ..." 行都是 tab 缩进,
+  不转义会导致每一条带堆栈的日志都是非法 JSON——这是实测出来的,不是猜的)下面用 %replace
+  做了转义,但没有覆盖 JSON 规范要求转义的全部控制字符(0x00-0x1F 里 tab/CR/LF 之外的其它字符,
+  比如 0x00-0x08、0x0B、0x0C、0x0E-0x1F,理论上可能出现在日志消息里但概率极低)。
+  如果以后要接真正的日志采集系统(ELK/Loki 之类)对 JSON 合法性有严格要求,
+  应该换成 logstash-logback-encoder,这需要先问(CLAUDE.md 1.3:不引入技术栈以外的依赖)。
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
+    <property name="LOG_FILE_NAME" value="hify"/>
+
+    <!-- traceId 用 %X{traceId:-},没有则输出空串,不打印字面量 null -->
+    <property name="CONSOLE_PATTERN"
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr(%-5level) %clr([%X{traceId:-}]){cyan} %clr(%logger{36}){cyan} %clr(-){faint} %msg%n%wEx"/>
+
+    <!--
+      手工拼的 JSON pattern,按顺序做四步转义:
+      1. 先转义反斜杠(必须最先做,否则后面插入的转义符会被自己的规则再转义一遍)
+      2. 再转义双引号
+      3. 制表符换成字面量 \t——异常堆栈的每一行 "at ..." 都是 tab 缩进,不转义就是非法 JSON
+         (这条是实测跑出来的:触发一次真实异常,直接喂进 python json.loads 校验才发现的)
+      4. 最后把换行替换成字面量 \n,避免异常堆栈的原始换行破坏 JSON 字符串结构
+    -->
+    <property name="JSON_MSG"
+              value="%replace(%replace(%replace(%replace(%msg){'\\', '\\\\'}){'&quot;', '\\&quot;'}){'\t', '\\t'}){'[\r\n]+', '\\n'}"/>
+    <property name="JSON_EX"
+              value="%replace(%replace(%replace(%replace(%xEx){'\\', '\\\\'}){'&quot;', '\\&quot;'}){'\t', '\\t'}){'[\r\n]+', '\\n'}"/>
+    <property name="JSON_PATTERN"
+              value='{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","thread":"%thread","level":"%level","traceId":"%X{traceId:-}","logger":"%logger{36}","message":"${JSON_MSG}","exception":"${JSON_EX}"}%n'/>
+
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${CONSOLE_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <appender name="FILE_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/${LOG_FILE_NAME}.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <!-- 按天滚动,保留 30 天(CLAUDE.md 未定具体值,取常见运维惯例) -->
+                <fileNamePattern>${LOG_PATH}/${LOG_FILE_NAME}-%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${JSON_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="FILE_JSON"/>
+        </root>
+    </springProfile>
+
+    <!-- 🔴 生产环境不输出 debug(CLAUDE.md 3.4);本地排查 SQL 时按需临时调 com.hify/org.apache.ibatis 到 DEBUG -->
+    <logger name="com.hify" level="INFO"/>
+</configuration>

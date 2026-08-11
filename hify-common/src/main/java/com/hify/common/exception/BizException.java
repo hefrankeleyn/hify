@@ -22,8 +22,11 @@ import lombok.Getter;
  * <p>⚠️ 但 <b>异步线程里的异常进不了 {@code @RestControllerAdvice}</b>，
  * SSE 的异步任务必须自己兜底（3.7 第 6 条、七节示例）。
  *
- * <p>本异常在熔断器里被 {@code ignoreExceptions} 排除（6.3）——
- * 业务错误不是上游故障，计入会让熔断被无辜打开。
+ * <p>⚠️ 熔断器（{@code hify-provider} 的 {@code CircuitBreakerService}）<b>不是</b>整体
+ * {@code ignoreExceptions(BizException.class)}——{@code LlmHttpClient} 把所有失败（含超时、
+ * 限流这类真正的上游故障）都统一转成了本异常，整体排除会让熔断器永远看不到失败、形同虚设。
+ * 实际做法是按 {@link ErrorCode} 精确判断：只有 {@link ErrorCode#PROVIDER_AUTH_FAILED} 这类
+ * "调用方自己配置错了"的错误码不计入失败率，超时、限流仍然计入。
  */
 @Getter
 public class BizException extends RuntimeException {

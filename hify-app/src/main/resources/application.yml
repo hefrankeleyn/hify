@@ -111,6 +111,12 @@ mybatis-plus:
 
 # ============================================================================
 # 日志（CLAUDE.md 3.4）
+#
+# ⚠️ 格式/输出目标（开发控制台彩色 vs 生产 JSON 落文件）交给 logback-spring.xml 管，
+#    这里不再重复定义 logging.pattern.console——两处都写格式，只有 logback-spring.xml
+#    生效，容易让人以为改这里的 pattern 会起作用，实际不会。
+#    级别仍然放在这里，Spring Boot 的 logging.level.* 和 logback-spring.xml 里的
+#    <logger> 是两套机制，任选其一即可，级别这种简单开关没必要挪进 XML。
 # ============================================================================
 logging:
   level:
@@ -119,9 +125,6 @@ logging:
     # 🔴 生产环境不输出 debug。本地排查 SQL 时临时打开下面两行：
     # com.hify: DEBUG
     # org.apache.ibatis: DEBUG
-  pattern:
-    # traceId 由 MDC 提供，异步线程里要手工透传（CLAUDE.md 3.8 第 7 条）
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"
 
 # ============================================================================
 # Hify 业务配置，前缀 hify.{module}.*（CLAUDE.md 12.2）

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hify.common.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +46,7 @@ public class RedisConfig {
 
         StringRedisSerializer keySerializer = new StringRedisSerializer();
         GenericJackson2JsonRedisSerializer valueSerializer =
-                new GenericJackson2JsonRedisSerializer(buildObjectMapper());
+                new GenericJackson2JsonRedisSerializer(buildRedisObjectMapper());
 
         // key 与 hashKey 都用 String,保证 redis-cli 里可读、可 SCAN 匹配
         template.setKeySerializer(keySerializer);
@@ -64,9 +65,13 @@ public class RedisConfig {
      * <p>⚠️ 这个 mapper <b>与 Spring MVC 用的那个是两回事</b>，不要互相复用：
      * MVC 的 mapper 绝不能开启默认类型信息，否则每个接口的 JSON 里都会多出 {@code @class} 字段。
      *
+     * <p>包内可见（非 {@code private}）是刻意的：{@link CacheConfig} 需要用同一套序列化规则构造
+     * {@code RedisCacheManager}，避免 {@code @Cacheable} 写入的 key 和 {@link RedisUtil} 手动写入的
+     * key 在同一个 Redis 实例里出现两套不同的 JSON 格式，排查时互相看不懂。
+     *
      * @return 配好的 mapper，不会为 {@code null}
      */
-    private ObjectMapper buildObjectMapper() {
+    static ObjectMapper buildRedisObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
 
         // 连私有字段一起读写:缓存对象常常没有 setter(如 @Value 的不可变 DTO)
