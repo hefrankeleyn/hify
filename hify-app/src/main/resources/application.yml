@@ -1,0 +1,139 @@
+# ============================================================================
+# Hify 应用配置
+#
+# 所有连接信息都写成 ${环境变量:本地默认值} 的形式：
+#   - 本地开发：直接跑，默认值对应 docs/03-本地测试/docker-compose.yml
+#   - K8s 生产：用 ConfigMap / Secret 注入环境变量覆盖（CLAUDE.md 2.4），不再另建 profile
+#
+# 🔴 默认值里的密码仅供本地容器使用，生产必须通过 Secret 注入。
+# ============================================================================
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: hify
+
+  # --------------------------------------------------------------------------
+  # MySQL —— 业务数据
+  #
+  # ⚠️ 这是全应用唯一的 DataSource。CLAUDE.md 5.7 的向量库（PostgreSQL + pgvector）
+  #    需要第二个 DataSource Bean，连接参数见文件末尾 hify.knowledge.vector.*，
+  #    等 hify-knowledge 的 vector 包落地时再接线。
+  # --------------------------------------------------------------------------
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:hify}?characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${MYSQL_USERNAME:hify}
+    password: ${MYSQL_PASSWORD:hify123456}
+    hikari:
+      # 🔴 不要因为 llm-chat- 线程池是 core 32 / max 64 就把连接池也开到 64。
+      #    CLAUDE.md 4.4 禁止在事务里做远程调用，LLM 调用期间不持有数据库连接，
+      #    真正并发访问数据库的只有首尾两段毫秒级短事务，10 条连接远远够用。
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1740000
+      pool-name: hify-hikari
+
+  # --------------------------------------------------------------------------
+  # Flyway —— 数据库版本管理
+  #
+  # 脚本分散在各模块的 hify-{module}/src/main/resources/db/migration/ 下，
+  # 打包后合并到同一个 classpath 路径，由 Flyway 按时间戳式版本号统一排序执行。
+  # --------------------------------------------------------------------------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # 允许在已有数据的库上首次接入 Flyway
+    baseline-on-migrate: true
+    baseline-version: 0
+    # 🔴 关掉自动修复：已发布的脚本永不修改（CLAUDE.md 5.8），
+    #    校验和对不上必须人工介入，不能让它悄悄改历史
+    validate-on-migrate: true
+    encoding: UTF-8
+
+  # --------------------------------------------------------------------------
+  # Redis —— 缓存与会话（CLAUDE.md 九节）
+  #
+  # ⚠️ Spring Boot 3.x 的前缀是 spring.data.redis.*，不是 2.x 的 spring.redis.*，
+  #    写错不会报错，只会静默用默认值连 localhost:6379 无密码。
+  # --------------------------------------------------------------------------
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:hify123456}
+      database: ${REDIS_DATABASE:0}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3000ms
+
+  # --------------------------------------------------------------------------
+  # 文件上传 —— 知识库文档
+  # 与 Nginx 的 client_max_body_size 50m 对齐（CLAUDE.md 7.2）
+  # --------------------------------------------------------------------------
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+# ============================================================================
+# MyBatis-Plus
+#
+# ⚠️ 逻辑删除（logic-delete-field / logic-delete-value）刻意<b>不在这里配</b>——
+#    它在 com.hify.common.config.MybatisPlusConfig 的 MybatisPlusPropertiesCustomizer 里，
+#    该 customizer 在属性绑定之后执行、会覆盖 YAML，两处都写只会造成"改了没生效"的困惑。
+# ============================================================================
+mybatis-plus:
+  # 🔴 必须用 classpath*: 而不是 classpath:。模块化单体下每个模块的 jar 里
+  #    都有自己的 mapper/ 目录，classpath: 只会命中第一个，其余模块的 XML 静默加载不到。
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    # 列 created_at 映射到属性 createdAt，CLAUDE.md 5.2 的必备五字段全靠它
+    map-underscore-to-camel-case: true
+    # 走 SLF4J，SQL 日志的开关由下面的 logging.level 统一控制；
+    # 不要用 StdOutImpl——它绕过日志框架直接 println，生产环境关不掉
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      # 🔴 主键用数据库自增，对应 CLAUDE.md 5.2 的 BIGINT UNSIGNED AUTO_INCREMENT。
+      #    MyBatis-Plus 默认是 ASSIGN_ID（雪花算法），不改会插入一串 19 位随机主键，
+      #    与建表脚本的自增语义冲突，且破坏聚簇索引的顺序性。
+      id-type: auto
+
+# ============================================================================
+# 日志（CLAUDE.md 3.4）
+# ============================================================================
+logging:
+  level:
+    root: INFO
+    com.hify: INFO
+    # 🔴 生产环境不输出 debug。本地排查 SQL 时临时打开下面两行：
+    # com.hify: DEBUG
+    # org.apache.ibatis: DEBUG
+  pattern:
+    # traceId 由 MDC 提供，异步线程里要手工透传（CLAUDE.md 3.8 第 7 条）
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"
+
+# ============================================================================
+# Hify 业务配置，前缀 hify.{module}.*（CLAUDE.md 12.2）
+# ============================================================================
+hify:
+  knowledge:
+    vector:
+      # ⚠️ 尚未接线：pgvector 需要独立于上面 spring.datasource 的第二个 DataSource Bean，
+      #    等 hify-knowledge 的 vector 包落地时在该模块的 config 包里装配。
+      #    本地依赖也还没起 pgvector 容器，见 docs/03-本地测试/docker-compose.yml 的说明。
+      url: jdbc:postgresql://${PGVECTOR_HOST:localhost}:${PGVECTOR_PORT:5432}/${PGVECTOR_DATABASE:hify_vector}
+      username: ${PGVECTOR_USERNAME:hify}
+      password: ${PGVECTOR_PASSWORD:hify123456}
+      # 🔴 维度固定 1536，一旦落地不可改——改维度要重跑全量向量化（CLAUDE.md 5.7）
+      dimension: 1536

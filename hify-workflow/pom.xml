@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-workflow</artifactId>
+    <name>hify-workflow</name>
+    <description>L3 编排层：简版工作流——JSON 定义解析与节点执行（线性 + 条件分支，无可视化拖拽）</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-workflow → common, provider, knowledge, mcp。
+
+      🔴 同层禁止：绝不能依赖 hify-chat。
+      🔴 也不依赖 hify-agent：工作流节点直接指定模型，不复用 Agent 配置。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-common</artifactId>
+        </dependency>
+
+        <!-- LLM 节点 -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-provider</artifactId>
+        </dependency>
+
+        <!-- 知识检索节点 -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-knowledge</artifactId>
+        </dependency>
+
+        <!-- 工具节点 -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-mcp</artifactId>
+        </dependency>
+    </dependencies>
+</project>

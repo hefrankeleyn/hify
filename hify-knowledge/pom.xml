@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-knowledge</artifactId>
+    <name>hify-knowledge</name>
+    <description>L2 能力层：知识库解析、分块、向量化、检索。文档元数据在 MySQL，向量在 pgvector</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-knowledge → common, provider（向量化要调 embedding 模型）。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-common</artifactId>
+        </dependency>
+
+        <!-- 向量化需要调用 embedding 模型，走 provider 的模型客户端 -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-provider</artifactId>
+        </dependency>
+
+        <!-- PostgreSQL + pgvector 的驱动。向量表不走 MyBatis-Plus（跨库、且 vector 类型 MP 不认），
+             用 spring-boot-starter-jdbc 的 JdbcTemplate 直接写 SQL（由 common 传递引入）。
+             运行期才需要，声明为 runtime -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+</project>

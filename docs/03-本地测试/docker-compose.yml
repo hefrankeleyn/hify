@@ -1,0 +1,116 @@
+# ============================================================================
+# Hify 本地开发依赖：MySQL 8.x + Redis 7.x
+#
+# 用法（在本文件所在目录执行）：
+#   docker compose up -d          启动
+#   docker compose ps             看状态，等两个服务都是 healthy
+#   docker compose logs -f mysql  看日志
+#   docker compose down           停止（保留数据）
+#
+# 数据落在宿主机 ${HIFY_DATA_DIR}，默认 /Users/lifei/Documents/data/hify：
+#   mysql/   MySQL 数据目录
+#   redis/   Redis AOF/RDB
+# 换机器或换路径时设环境变量即可，不必改本文件：
+#   HIFY_DATA_DIR=/your/path docker compose up -d
+#
+# ⚠️ 重置数据库要手工删目录，`down -v` 对宿主机挂载无效：
+#   docker compose down && rm -rf /Users/lifei/Documents/data/hify/mysql
+#
+# 连接方式：
+#   MySQL   localhost:3306  库 hify  用户 hify / hify123456（root / root123456）
+#   Redis   localhost:6379  密码 hify123456
+#   redis-cli -h 127.0.0.1 -p 6379 -a hify123456
+#
+# ⚠️ 仅供本地开发。密码是明文的，生产环境走 K8s Secret（CLAUDE.md 2.4）。
+# ⚠️ 按 CLAUDE.md 2.4，本地依赖还应包含 pgvector（知识库向量存储）。
+#    hify-knowledge 模块尚未落地，暂不启动，届时在此追加一个 pgvector/pgvector 服务。
+# ============================================================================
+
+services:
+
+  # --------------------------------------------------------------------------
+  # MySQL —— 业务数据
+  # --------------------------------------------------------------------------
+  mysql:
+    # MySQL 8.4 LTS。已实测可用（8.4.9），但有两点要知道：
+    #   1. 8.4 彻底移除了 mysql_native_password 插件，只支持 caching_sha2_password。
+    #      mysql-connector-j 9.x 原生支持，但老版本 GUI 客户端可能连不上。
+    #   2. Flyway 11.7.2 官方支持到 MySQL 8.1，启动时会打一条
+    #      "Flyway upgrade recommended: MySQL 8.4 ... support has not been tested" 警告。
+    #      实测迁移功能正常，若要消掉这条警告，把镜像换成 mysql:8.0 即可（其余配置无需改动）。
+    image: mysql:8.4
+    container_name: hify-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      # 容器首次启动时自动建库建用户，无需 init 脚本；表结构由 Flyway 负责
+      MYSQL_DATABASE: hify
+      MYSQL_USER: hify
+      MYSQL_PASSWORD: hify123456
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    command:
+      # 🔴 服务端默认字符集必须是 utf8mb4 + utf8mb4_0900_ai_ci，与 CLAUDE.md 5.2 的建表声明一致。
+      #    不统一会导致跨表字符列比较时索引失效，且报错晦涩（Illegal mix of collations）。
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      # 与容器 TZ 保持一致。CLAUDE.md 5.2 用 DATETIME(3) 不做时区转换，
+      # 但 NOW(3) 取的是会话时区，逻辑删除写的就是它，必须固定下来。
+      - --default-time-zone=+08:00
+      # 本地开发打开慢查询日志，方便对照 5.4 的索引规范自查
+      - --slow-query-log=ON
+      - --long-query-time=1
+    volumes:
+      # ⚠️ 宿主机挂载。macOS 上 MySQL 数据目录走 VirtioFS 会明显慢于命名卷
+      #    （MySQL 是大量小块随机 IO，正是文件共享层最吃亏的场景）。
+      #    本地开发数据量小，可以接受；换来的是能直接在 Finder 里看到、备份、拷走数据文件。
+      - ${HIFY_DATA_DIR:-/Users/lifei/Documents/data/hify}/mysql:/var/lib/mysql
+    healthcheck:
+      # 🔴 刻意不用 mysqladmin ping：只要服务端有应答它就算成功，
+      #    初始化期间、乃至 Access denied 时都可能判定 healthy，
+      #    结果是业务库和账号还没建好就报就绪，Flyway 随即在建连阶段失败。
+      #    这里直接用业务账号查业务库，真正可用才通过。
+      test: ["CMD", "mysql", "-uhify", "-phify123456", "-D", "hify", "-e", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks:
+      - hify-network
+
+  # --------------------------------------------------------------------------
+  # Redis —— 缓存与会话（CLAUDE.md 九节）
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7.4-alpine
+    container_name: hify-redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      # 开 AOF，重启容器后本地调试用的缓存不会全丢
+      - --appendonly
+      - "yes"
+      # 本地也设密码：让 spring.data.redis.password 这条配置路径被真实走到，
+      # 免得上线才发现从没验证过
+      - --requirepass
+      - hify123456
+    volumes:
+      - ${HIFY_DATA_DIR:-/Users/lifei/Documents/data/hify}/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "hify123456", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - hify-network
+
+networks:
+  hify-network:
+    name: hify-network
+    driver: bridge

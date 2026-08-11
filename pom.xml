@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.hify</groupId>
+    <artifactId>hify</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>hify</name>
+    <description>Hify - 简版 AI Agent 开发平台。模块化单体：一个 Spring Boot 应用、一个进程、一个 jar，Maven 多模块只在编译期起隔离作用</description>
+
+    <!--
+      八个模块，按 CLAUDE.md 2.2 的四层依赖「自下而上」列出，仅为可读性，
+      Maven 会依据模块间依赖自行做拓扑排序：
+
+        L4  hify-app                                      聚合全部
+        L3  hify-chat / hify-workflow                     编排层
+        L2  hify-agent / hify-knowledge / hify-mcp        配置 / 能力层
+        L1  hify-provider                                 能力底座
+        L0  hify-common                                   公共，不依赖任何业务模块
+
+      模块数量一期封顶 8 个，新增模块必须先满足 CLAUDE.md 2.1 的三个条件。
+    -->
+    <modules>
+        <module>hify-common</module>
+        <module>hify-provider</module>
+        <module>hify-agent</module>
+        <module>hify-knowledge</module>
+        <module>hify-mcp</module>
+        <module>hify-chat</module>
+        <module>hify-workflow</module>
+        <module>hify-app</module>
+    </modules>
+
+    <properties>
+        <!-- JDK 21 LTS：虚拟线程、模式匹配可用；Spring Boot 3.5 支持 17~24 -->
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <!-- CLAUDE.md 3.9：文件编码 UTF-8 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- ===== 三方依赖版本，全部集中在此，子模块一律不写 version ===== -->
+        <!-- Spring Boot：同时托管 Jackson / MySQL 驱动 / PostgreSQL 驱动 / Flyway / Lombok 等 -->
+        <spring-boot.version>3.5.4</spring-boot.version>
+        <!-- MyBatis-Plus：spring-boot3 专用 starter，不要用 spring-boot2 的那个 -->
+        <mybatis-plus.version>3.5.10.1</mybatis-plus.version>
+        <!-- Resilience4j：CLAUDE.md 1.3 明确「仅 circuitbreaker」，因此只引核心模块，不引 starter -->
+        <resilience4j.version>2.2.0</resilience4j.version>
+        <!-- Lombok：与 Spring Boot 3.5.4 BOM 托管版本保持一致，注解处理器路径需要显式版本 -->
+        <lombok.version>1.18.38</lombok.version>
+        <!-- ArchUnit：CLAUDE.md 12.3 要求的架构测试，只在 hify-app 的 test 作用域使用 -->
+        <archunit.version>1.4.0</archunit.version>
+
+        <!-- ===== 构建插件版本，显式锁定，避免不同 Maven 版本解析出不同插件 ===== -->
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot 依赖 BOM。注意：这里用 import 而不是继承 spring-boot-starter-parent，
+                 多模块工程下父 pom 应当由项目自己掌控，插件配置在下方 build 段显式声明 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- MyBatis-Plus BOM：托管 starter / jsqlparser / annotation 等全部子模块 -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-bom</artifactId>
+                <version>${mybatis-plus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Resilience4j BOM -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-bom</artifactId>
+                <version>${resilience4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- ArchUnit：BOM 未托管，单独声明版本 -->
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- ===== 内部模块，统一托管版本，子模块引用时不写 version ===== -->
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-provider</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-agent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-knowledge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-mcp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-chat</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hify</groupId>
+                <artifactId>hify-workflow</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!--
+      全模块共用的依赖，只放两样：
+      1. Lombok —— CLAUDE.md 3.10 要求「能用注解就用」，每个模块都要写 @Data / @Slf4j / @RequiredArgsConstructor；
+      2. spring-boot-starter-test —— 每个模块都要能写单测。
+      业务基础设施（web / redis / mybatis-plus 等）放在 hify-common，通过依赖链传递给其它模块。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- 只有 hify-app 需要打可执行 jar，因此这里只做版本与配置托管，不在父 pom 激活 -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <configuration>
+                        <excludes>
+                            <!-- repackage 默认会把 provided 作用域也打进 BOOT-INF/lib，Lombok 是编译期工具，必须排除 -->
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>repackage</id>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <release>${java.version}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <!-- 保留方法参数名：Spring 的 @PathVariable / @RequestParam 与 MyBatis 的参数绑定都依赖它 -->
+                    <parameters>true</parameters>
+                    <!-- 显式声明注解处理器路径，避免 IDE 与命令行对 Lombok 的处理不一致 -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

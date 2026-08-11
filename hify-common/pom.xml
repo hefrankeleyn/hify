@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-common</artifactId>
+    <name>hify-common</name>
+    <description>L0 公共模块：统一响应体、业务异常与错误码基类、全局常量、工具类、加解密。不依赖任何业务模块</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-common → 无业务模块依赖。
+
+      本模块同时承担「基础设施 starter 汇聚点」的角色：
+      其余七个模块都直接或间接依赖 common，因此 web / validation / redis / mybatis-plus
+      这些人人都要用的技术栈组件在此声明一次，避免每个子模块重复抄一遍。
+      这不影响架构约束——架构约束管的是「模块之间不能互相引用什么」，与三方 starter 无关。
+    -->
+    <dependencies>
+        <!-- Spring MVC：Result 统一响应体、@RestControllerAdvice 全局异常处理、SseEmitter 都在 MVC 栈上。
+             注意 CLAUDE.md 七节红线：不引入 WebFlux -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Bean Validation：Request DTO 上的 @Valid / @Min / @Max（8.3 要求 pageSize 必须有上限） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Redis：CLAUDE.md 九节 Cache-Aside，且明确禁止进程内缓存 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- MyBatis-Plus：BaseMapper、@TableLogic 软删除、MetaObjectHandler 自动填充 created_at/updated_at。
+             传递引入 spring-boot-starter-jdbc，因此各模块可直接使用 JdbcTemplate -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
+        <!-- MyBatis-Plus 3.5.9 起把 JSqlParser 拆成独立模块，
+             分页插件 PaginationInnerInterceptor 依赖它，缺少会在启动时报 ClassNotFound -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+        </dependency>
+    </dependencies>
+</project>

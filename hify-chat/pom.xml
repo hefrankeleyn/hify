@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-chat</artifactId>
+    <name>hify-chat</name>
+    <description>L3 编排层：对话引擎——SSE 生命周期、上下文装配、RAG 注入、工具循环</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-chat → common, provider, agent, knowledge, mcp。
+
+      🔴 同层禁止：绝不能依赖 hify-workflow。
+      跨模块只能注入对方 service 包下的接口，构造器注入，只传 id 与对方 dto。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-common</artifactId>
+        </dependency>
+
+        <!-- 跳级向下：直接调模型客户端做流式生成 -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-provider</artifactId>
+        </dependency>
+
+        <!-- 装配 Agent 配置，并在运行时校验其绑定的模型 / 知识库 / 工具是否仍然有效（CLAUDE.md 4.3） -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-agent</artifactId>
+        </dependency>
+
+        <!-- RAG 检索，失败时降级为不注入知识库（CLAUDE.md 6.5） -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-knowledge</artifactId>
+        </dependency>
+
+        <!-- 工具循环，上限 5 轮（CLAUDE.md 6.4） -->
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-mcp</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-provider</artifactId>
+    <name>hify-provider</name>
+    <description>L1 能力底座：模型提供商管理 + 模型客户端（OpenAI / Claude / Gemini / Ollama）</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-provider → common。
+
+      LLM HTTP 客户端不引第三方 HTTP 库：JDK 21 自带的 java.net.http.HttpClient
+      已能满足四道超时闸（连接 / 首字节 / 流间隔 / 整体）与 SSE 逐行解析，
+      且不像 WebClient 那样把 WebFlux 拖进来（CLAUDE.md 七节红线）。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-common</artifactId>
+        </dependency>
+
+        <!-- 熔断：CLAUDE.md 1.3 明确「Resilience4j 仅 circuitbreaker」。
+             6.3 用的是编程式 CircuitBreakerConfig.custom()，并且熔断器要按 providerId 分实例，
+             注解切面反而做不到，因此只引核心模块，不引 resilience4j-spring-boot3 starter -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-agent</artifactId>
+    <name>hify-agent</name>
+    <description>L2 配置层：Agent 定义与配置，持有 agent_knowledge_base / agent_tool 两张绑定中间表</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-agent → common。
+
+      注意这里「只依赖 common」是刻意的：
+      Agent 绑定模型 / 知识库 / MCP 工具时只存 ID，保存时不校验对方是否存在（CLAUDE.md 4.3），
+      否则会引出 agent → knowledge、agent → mcp 两条同层依赖，违反 2.2 的「同层禁止」。
+      存在性校验由 hify-chat 在运行时装配配置时完成。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-common</artifactId>
+        </dependency>
+    </dependencies>
+</project>

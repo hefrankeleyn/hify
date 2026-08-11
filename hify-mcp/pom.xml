@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hify</groupId>
+        <artifactId>hify</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hify-mcp</artifactId>
+    <name>hify-mcp</name>
+    <description>L2 能力层：MCP Server 配置、工具发现与调用</description>
+
+    <!--
+      依赖矩阵（CLAUDE.md 2.2）：hify-mcp → common。
+
+      MCP 协议客户端同样使用 JDK 21 的 java.net.http.HttpClient 手写，不引三方 SDK；
+      工具清单缓存走 Redis（由 common 传递而来），数据库做二级兜底（CLAUDE.md 6.5）。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.hify</groupId>
+            <artifactId>hify-common</artifactId>
+        </dependency>
+    </dependencies>
+</project>
