@@ -2,6 +2,9 @@
 
 本目录放本地开发环境的编排与说明。`docker-compose.yml` 起依赖，应用在 IDE 或命令行跑（CLAUDE.md 2.4）。
 
+**本文只讲后端。** 前端 `hify-web` 的启动见 [`前端本地启动.md`](./前端本地启动.md)——
+它不进 Maven reactor，构建与启动完全独立，不需要先跑通后端。
+
 ---
 
 ## 一、前置要求
@@ -17,6 +20,23 @@
 ---
 
 ## 二、三步启动
+
+> **想一条命令拉起全栈**，在仓库根目录用 `make`：
+>
+> | 命令 | 作用 |
+> |---|---|
+> | `make start` | 依赖检查 → 构建 → 后台起后端 → 轮询健康检查 → 起前端。任何一步失败都会停下并给出修复命令 |
+> | `make stop` | 按 PID 文件停前后端，先 SIGTERM 再超时 SIGKILL |
+> | `make restart` | 先 stop 再 start |
+> | `make build` / `make clean` / `make package` | 构建 / 清理产物 / 打 tar.gz |
+> | `make` | 列出全部 target |
+>
+> 实现在 [`docs/bin/start.sh`](../bin/start.sh) 与 [`docs/bin/stop.sh`](../bin/stop.sh)，Makefile 只做转发。
+> `make start` 的前端跑在前台，`Ctrl+C` 会把前后端一起关掉；`stop.sh` 兜的是终端被直接关掉、
+> 陷阱来不及执行留下孤儿进程的情况。
+>
+> ⚠️ **它们都不负责启动依赖容器**，MySQL / Redis 仍需先按下面第 1 步起好。
+> 下面是手工的等价步骤，排查问题时用。
 
 ```bash
 # 1. 起依赖（在本目录执行）

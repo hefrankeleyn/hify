@@ -1,0 +1,37 @@
+{
+  /* 浏览器侧程序：src/ 下的全部代码。 */
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "useDefineForClassFields": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    /* 类型检查由 vue-tsc 承担，产物由 Vite 编译，TS 自身不产出文件 */
+    "noEmit": true,
+    /* 被根 tsconfig.json 以 project reference 引用，必须开 composite */
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    /* 严格模式全开：类型是这个项目里唯一的编译期护栏，不留口子 */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    /* 与 vite.config.ts 的 resolve.alias 一一对应，改一处必须同步改另一处 */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    /* 🔴 只注入 vite/client（import.meta.env + 静态资源模块声明），不注入 "node"。
+       这条只有在 vite.config.ts 被隔离到 tsconfig.node.json 之后才真正生效——
+       只要构建配置和 src 同处一个 program，它 import 'node:url' 就会把 @types/node
+       的全局声明拉进整个程序，src 里写 process / __dirname 照样不报错。 */
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "env.d.ts"]
+}

@@ -164,6 +164,50 @@ com.hify.common/
 **用什么**：Deployment 保活、PVC 持久化、ConfigMap/Secret 管配置、`rollout undo` 回滚。
 **不用什么**：多副本、HPA、Service Mesh、Helm、多环境 namespace。
 
+### 2.5 前端结构（`hify-web`）
+
+🔴 **`hify-web` 不进 Maven reactor**，父 pom 的 `<modules>` 里没有它，构建走独立的 `pnpm build`。理由：引 `frontend-maven-plugin` 会让每次后端构建都跑一遍 npm，前后端改动频率完全不同步。
+
+**目录固定为以下十一项，不在表里的目录不许建**（新增前先问）：
+
+```
+hify-web/
+├── .env.example          # 环境变量模板（.env 被 .gitignore 忽略，不入库）
+├── index.html
+├── vite.config.ts        # 别名、开发代理、构建产物
+├── tsconfig.json         # 只做聚合，引用下面两个
+├── tsconfig.app.json     # 浏览器侧程序（src/）：有 DOM，无 Node 全局
+├── tsconfig.node.json    # Node 侧程序（vite.config.ts）：有 Node 全局，无 DOM
+├── env.d.ts              # *.vue 模块声明 + import.meta.env 类型
+└── src/
+    ├── api/              接口调用，按后端模块分文件（provider.ts / agent.ts …）
+    ├── assets/           静态资源
+    ├── components/       全局通用组件
+    ├── composables/      组合式函数（useSse 等）
+    ├── layouts/          布局壳（只有一种布局时可直接写在 App.vue，本目录留空）
+    ├── router/           路由表
+    ├── stores/           Pinia
+    ├── styles/           全局样式
+    ├── types/            TS 类型（Result / PageResult / 各模块 DTO）
+    ├── utils/            request 封装、SSE 解析
+    ├── views/            页面，按后端模块分子目录
+    ├── App.vue
+    └── main.ts
+```
+
+**依赖白名单**（技术栈表之外只允许以下三项，其余需先问）：`vue-router`、`pinia`、`axios`。包管理器用 **pnpm**。
+
+| 🔴 | 规则 |
+|---|---|
+| 1 | **接口一律写相对路径 `/api/v1/**`**——开发环境由 Vite 代理转发到 `localhost:8080`，生产由 Nginx 反代。两边一致，因此**后端永远不需要开 CORS** |
+| 2 | Vite 代理的 `timeout` / `proxyTimeout` 必须 **≥ 360s**，对齐 6.1 的不等式 `Nginx(360s) > SseEmitter(300s)`。用默认值会在开发环境把长对话掐断 |
+| 3 | **响应壳的剥离只在 `utils/request.ts` 的拦截器里**（成功时自动解包出 `Result.data`），页面不自己判 `code`；分页必须用 `getPage()`，用 `get()` 会丢掉与 `data` 平级的 `total` / `page` / `size`（8.2） |
+| 3b | axios 的 `baseURL` 是 **`/api`，不含版本号**，`api/*.ts` 里要自己带 `/v1`（`get('/v1/health')` → `/api/v1/health`）。漏了不会报错，只会 404 |
+| 4 | **流式对话不用原生 `EventSource`**，用 `fetch` + `ReadableStream`，理由见 7.3 |
+| 5 | Element Plus 当前**全量引入**。要改按需引入需新增 `unplugin-auto-import` + `unplugin-vue-components`，属白名单外依赖 |
+| 6 | `.env` 被 `.gitignore` 忽略，**读环境变量的地方必须在代码里写同值默认值**，否则新克隆跑不起来 |
+| 7 | **`vite.config.ts` 必须留在 `tsconfig.node.json` 里，不许并回 app 侧**。它 `import 'node:url'` 会把 `@types/node` 的全局声明拉进整个 program，两者同处一个 program 时 `src/` 里写 `process` / `__dirname` 就不再报错（`types` 数组拦不住显式 import 带进来的全局）。因用了 project reference，类型检查命令是 `vue-tsc --build` |
+
 ---
 
 ## 三、编码规范

@@ -1,0 +1,9 @@
+{
+  /* 根配置只做聚合，不含任何 compilerOptions。
+     实际的两个程序：
+     - tsconfig.app.json  浏览器侧（src/），有 DOM 无 Node 全局
+     - tsconfig.node.json Node 侧（vite.config.ts），有 Node 全局无 DOM
+     拆开的理由见 tsconfig.node.json 顶部注释。 */
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+}

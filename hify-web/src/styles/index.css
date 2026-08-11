@@ -1,0 +1,26 @@
+/* 全局基础样式。Element Plus 自带的 CSS 变量已覆盖大部分主题需求，这里只做最小重置。 */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

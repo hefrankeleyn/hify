@@ -1,0 +1,27 @@
+{
+  /* Node 侧程序：只含构建工具配置，跑在 Node 里而不是浏览器里。
+     单独一个 program 的唯一目的，是把两边的全局环境隔开：
+     - 这里有 process / __dirname，没有 document / window；
+     - tsconfig.app.json 那边正好相反。
+     合成一个 tsconfig 也能构建成功，但 @types/node 的全局声明会漏进 src/，
+     浏览器代码里误用 Node 全局就不再报错了。 */
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    /* 🔴 不含 DOM：构建配置里不该出现 document / window */
+    "lib": ["ES2023"],
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts"]
+}
