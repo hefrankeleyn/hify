@@ -61,3 +61,54 @@ Hify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署
 - 同步调用 60s 超时，SSE 流式 120s 超时，连通性测试 10s
 - 按异常类型区分重试：网络抖动重试、认证失败不重试、限流退避重试
 - 流式响应使用 SseEmitter + 独立线程池，不引入 WebFlux
+
+### 部署架构
+生产环境：Docker + K8s
+- 前端：Nginx 托管静态文件 + API 反向代理（proxy_buffering off）
+- 后端：Spring Boot，K8s Deployment（一期单副本）
+- 数据库：MySQL 8.x（外部服务）
+- 缓存：Redis 7.x（外部服务）
+- 向量库：PostgreSQL + pgvector（外部服务）
+- 本地开发：java -jar + npm run dev，start.sh 一键启动
+
+### 缓存策略
+- Provider/Agent 配置：Redis Cache-Aside，TTL 30min
+- 对话上下文：Redis，TTL 2h
+- 对话消息、知识库文档：不缓存，走数据库
+- LLM 响应：不缓存
+
+### 数据库规范
+通用字段：
+- 主键 id BIGINT 自增，禁止 UUID
+- 时间字段 created_at / updated_at，DATETIME(3)
+- 逻辑删除 deleted TINYINT(1)
+- 禁止 NULL，空值用空字符串或 0
+- 枚举用 VARCHAR(32)，不用 MySQL ENUM
+
+索引规则：
+- 命名 idx_{表名}_{字段名}
+- 逻辑删除字段必须加进组合索引
+- 组合索引等值列在前，范围列在后
+- 多对多关联表两个方向都要索引
+- 唯一约束用 UNIQUE INDEX，不只在代码层校验
+- 禁止在 TEXT/BLOB 字段建索引
+- 不建数据库级外键约束，应用层维护
+
+分页规则：
+- 默认用游标分页（WHERE id < lastId ORDER BY id DESC LIMIT N）
+- OFFSET 分页限制最大 10000 条
+- COUNT 只在第一页查，翻页不重复查
+
+大表预判：
+- message：增长最快，必须建 (conversation_id, created_at) 索引
+- document_chunk：MySQL 只存元数据，向量存 pgvector
+
+pgvector 规范：
+- 向量表建在 PostgreSQL，维度固定 1536
+- 必须建 HNSW 索引
+- 检索必须加 LIMIT，禁止全量排序
+
+### 扩展路径
+一期单副本 → 多副本 + 主从分离（500人）
+→ MQ 异步 + Qdrant（2000人）→ 微服务拆分 + Redis 集群（几千人）
+触发条件驱动，条件不到不动。
