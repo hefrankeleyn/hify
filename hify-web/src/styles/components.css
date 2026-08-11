@@ -1,0 +1,52 @@
+/**
+ * 组件级样式覆盖。
+ *
+ * tokens.css 只放变量、element-theme.css 只做「变量 → el-* 变量」的映射；
+ * 但渐变背景、伪元素这类效果没法用一个 CSS 自定义属性表达，必须写实际的选择器规则，
+ * 所以单独放这一个文件，晚于前两者导入（见 index.css）。
+ */
+
+/* ----------------------------------------------------------------
+ * 主要按钮：蓝紫渐变。
+ * 用 :not(.is-plain):not(.is-text):not(.is-link) 把 plain / text / link 三种变体排除在外——
+ * 它们本来就该是浅底或无底，套渐变会和 Element Plus 自身的视觉逻辑冲突。
+ * ---------------------------------------------------------------- */
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, var(--hify-primary-500) 0%, var(--hify-primary-700) 100%);
+  transition:
+    var(--hify-transition-shadow),
+    var(--hify-transition-transform),
+    var(--hify-transition-colors);
+}
+
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):hover,
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):focus {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, var(--hify-primary-400) 0%, var(--hify-primary-600) 100%);
+  box-shadow: var(--hify-shadow-glow-primary-strong);
+  transform: translateY(-1px);
+}
+
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link):active {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, var(--hify-primary-600) 0%, var(--hify-primary-800) 100%);
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.el-button--primary.is-disabled:not(.is-plain):not(.is-text):not(.is-link) {
+  background-image: none;
+  background-color: var(--hify-gray-200);
+}
+
+/* ----------------------------------------------------------------
+ * 卡片工具类：白底 + 轻阴影 + 圆角，浅灰画布上的内容容器。
+ * 用工具类而不是 Vue 组件——纯样式、无逻辑、无状态，包一层组件属于过度抽象。
+ * ---------------------------------------------------------------- */
+.hify-card {
+  background-color: var(--hify-bg-surface);
+  border-radius: var(--hify-radius-lg);
+  box-shadow: var(--hify-shadow-sm);
+  padding: var(--hify-space-5);
+}

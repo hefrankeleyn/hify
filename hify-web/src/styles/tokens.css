@@ -1,0 +1,261 @@
+/**
+ * Hify 设计系统 · 设计令牌（Design Tokens）
+ *
+ * 视觉方向：浅底 + 科技感点缀。内容区浅色为主（管理后台表格 / 表单密集，长时间看深色底容易疲劳），
+ * 侧边栏固定深色底，制造品牌辨识度；主色为蓝紫系，辅色为青色，用于数据 / 状态类信息。
+ * 参考 Linear（冷灰中性色 + 高对比度正文 + 干脆的过渡动效）与 Supabase（深色侧边栏 + 亮色强调）。
+ *
+ * 组织方式：
+ *   1. 原始色阶（--hify-{色相}-{50~950}）：不直接在业务代码里用，只作为下面语义令牌的取值来源。
+ *   2. 语义令牌（--hify-color-* / --hify-bg-* / --hify-text-* / --hify-border-*）：业务代码只用这一层，
+ *      这样以后要整体调色，只改本文件，不用改任何组件。
+ * 本文件只声明变量，不含任何选择器规则；Element Plus 的变量映射见同目录 element-theme.css。
+ */
+
+:root {
+  /* ============================================================
+   * 一、主色 Primary —— 蓝紫系「Ionic Violet」
+   * 品牌色、主按钮、链接、选中态、聚焦态。
+   * 500 用于品牌标识本身（Logo、渐变、图表线条等不承载正文对比度的场景，更鲜艳）；
+   * 600 是实际交互色（按钮默认态），与白色文字对比度 6.8:1，比 500（5.1:1）更稳妥。
+   * ============================================================ */
+  --hify-primary-50: #f2f0fe;
+  --hify-primary-100: #e6e2fd;
+  --hify-primary-200: #d0c9fb;
+  --hify-primary-300: #afa1f7;
+  --hify-primary-400: #8a76f1;
+  --hify-primary-500: #6857e9;
+  --hify-primary-600: #5540d6;
+  --hify-primary-700: #4432ae;
+  --hify-primary-800: #362a88;
+  --hify-primary-900: #2b2270;
+  --hify-primary-950: #1b1544;
+  /* RGB 三元组，供 rgba(var(--hify-primary-*-rgb), a) 这类半透明叠加（悬浮光晕、选中底色）使用 */
+  --hify-primary-500-rgb: 104, 87, 233;
+  --hify-primary-600-rgb: 85, 64, 214;
+
+  /* ============================================================
+   * 二、辅色 Secondary —— 青色系「Ionic Cyan」
+   * 用于数据可视化、在线 / 运行中等状态指示、次级交互元素。
+   * 刻意选偏青而非偏绿的色相（约 190°），与下面成功色（约 150°）拉开足够色相差，
+   * 避免「运行中」（辅色）和「成功」（语义色）两种状态在表格里看起来太像。
+   * ============================================================ */
+  --hify-cyan-50: #e7fafb;
+  --hify-cyan-100: #c7f1f4;
+  --hify-cyan-200: #93e3e9;
+  --hify-cyan-300: #56cdd8;
+  --hify-cyan-400: #26b4c2;
+  --hify-cyan-500: #0f98a8;
+  --hify-cyan-600: #0c7b89;
+  --hify-cyan-700: #0a616d;
+  --hify-cyan-800: #094e58;
+  --hify-cyan-900: #073f47;
+  --hify-cyan-500-rgb: 15, 152, 168;
+
+  /* ============================================================
+   * 三、语义色阶 Semantic —— 成功 / 警告 / 危险
+   * 600 用于图标、色块填充等大面积场景；小号正文文字请用 700（对比度更高，见各自注释）。
+   * ============================================================ */
+  --hify-success-50: #e9fbf1;
+  --hify-success-100: #cbf3da;
+  --hify-success-200: #97e4b4;
+  --hify-success-500: #17a34c;
+  --hify-success-600: #0f8a3e; /* 与白色对比度 4.45:1，图标 / 加粗大字可用 */
+  --hify-success-700: #0c6e32; /* 与白色对比度 6:1+，小号正文用这一档 */
+
+  --hify-warning-50: #fff8e8;
+  --hify-warning-100: #ffedc2;
+  --hify-warning-200: #ffda85;
+  --hify-warning-500: #e8900a;
+  --hify-warning-600: #c27107; /* 琥珀色天然对比度偏低（3.7:1），只用于图标 / 大号加粗文字 */
+  --hify-warning-700: #995807; /* 小号正文 / 链接用这一档（5.6:1） */
+
+  --hify-danger-50: #fef1f1;
+  --hify-danger-100: #fddede;
+  --hify-danger-200: #fbbebe;
+  --hify-danger-500: #e13b3b;
+  --hify-danger-600: #c22929; /* 与白色对比度 5.77:1 */
+  --hify-danger-700: #9f2222;
+
+  /* ============================================================
+   * 四、中性色阶 Neutral（背景色阶 / 文字色阶 / 边框的共同来源）
+   * 刻意带一点点蓝紫色相（而非纯灰），让浅色背景和深色侧边栏都能与主色呼应，
+   * 不会出现「暖灰背景 + 冷紫主色」互相打架的观感。
+   * ============================================================ */
+  --hify-gray-0: #ffffff;
+  --hify-gray-50: #f7f7fb;
+  --hify-gray-100: #eeeef5;
+  --hify-gray-200: #e2e2ed;
+  --hify-gray-300: #cbcbda;
+  --hify-gray-400: #a6a6bd;
+  --hify-gray-500: #82829c;
+  --hify-gray-600: #62627a;
+  --hify-gray-700: #48485c;
+  --hify-gray-800: #313142;
+  --hify-gray-900: #1d1d2a;
+  --hify-gray-950: #121219;
+
+  /* ============================================================
+   * 五、背景色阶 Background —— 语义化，业务代码只用这一层
+   * ============================================================ */
+  --hify-bg-canvas: var(--hify-gray-50); /* 应用外壳背景（内容区最底层） */
+  --hify-bg-surface: var(--hify-gray-0); /* 卡片 / 表格 / 表单容器 */
+  --hify-bg-surface-hover: var(--hify-gray-50); /* 可交互行 / 列表项悬浮 */
+  --hify-bg-surface-sunken: var(--hify-gray-100); /* 次级嵌套区域，如代码块、Tab 面板内层 */
+  --hify-bg-overlay: var(--hify-gray-0); /* 弹层：Dialog / Dropdown / Popover */
+  --hify-bg-disabled: var(--hify-gray-100);
+  --hify-bg-primary-subtle: var(--hify-primary-50); /* 品牌色浅底：选中态、提示条 */
+  --hify-bg-secondary-subtle: var(--hify-cyan-50);
+  --hify-bg-success-subtle: var(--hify-success-50);
+  --hify-bg-warning-subtle: var(--hify-warning-50);
+  --hify-bg-danger-subtle: var(--hify-danger-50);
+
+  /* ============================================================
+   * 六、文字色阶 Text —— 从强到弱，语义化命名，业务代码只用这一层
+   * ============================================================ */
+  --hify-text-heading: var(--hify-gray-900); /* 标题 / 强调正文，对比度 15:1+ */
+  --hify-text-body: var(--hify-gray-700); /* 默认正文，对比度 8.9:1 */
+  --hify-text-muted: var(--hify-gray-600); /* 次要说明 / 表格元信息，对比度 5.9:1 */
+  --hify-text-placeholder: var(--hify-gray-500); /* 表单占位符 */
+  --hify-text-disabled: var(--hify-gray-400);
+  --hify-text-inverse: var(--hify-gray-0); /* 深色底（侧边栏 / 主按钮）上的文字 */
+  --hify-text-link: var(--hify-primary-600);
+  --hify-text-link-hover: var(--hify-primary-700);
+
+  /* ============================================================
+   * 七、边框色 Border
+   * ============================================================ */
+  --hify-border-subtle: var(--hify-gray-200);
+  --hify-border-default: var(--hify-gray-300);
+  --hify-border-strong: var(--hify-gray-400);
+  --hify-border-primary: var(--hify-primary-300);
+
+  /* ============================================================
+   * 八、语义化交互色令牌 —— 按钮 / 状态用色，业务代码只用这一层
+   * ============================================================ */
+  --hify-color-primary: var(--hify-primary-600);
+  --hify-color-primary-hover: var(--hify-primary-500);
+  --hify-color-primary-active: var(--hify-primary-700);
+
+  --hify-color-secondary: var(--hify-cyan-600);
+  --hify-color-secondary-hover: var(--hify-cyan-500);
+  --hify-color-secondary-active: var(--hify-cyan-700);
+
+  --hify-color-success: var(--hify-success-700);
+  --hify-color-warning: var(--hify-warning-700);
+  --hify-color-danger: var(--hify-danger-600);
+  --hify-color-info: var(--hify-gray-600);
+
+  /* ============================================================
+   * 九、侧边栏 Sidebar —— 固定深色底（非全局深色模式，只作用于侧边栏这一块区域）
+   * 背景刻意比中性色阶的 gray-900 更深、并带一点主色色相，与浅色内容区形成品牌反差。
+   * 菜单项默认态就是白色文字（非灰色）——层级差用透明度和背景亮度表达，不用降低文字本身的可读性。
+   * ============================================================ */
+  --hify-sidebar-bg: #191826;
+  --hify-sidebar-bg-elevated: #221f35; /* 子菜单展开 / 二级面板 */
+  --hify-sidebar-bg-hover: rgba(255, 255, 255, 0.1); /* 悬浮态背景微亮 */
+  --hify-sidebar-bg-active: rgba(255, 255, 255, 0.12); /* 选中态背景比 hover 更亮一档，靠左侧竖线做最终区分 */
+  --hify-sidebar-border: rgba(255, 255, 255, 0.08);
+  --hify-sidebar-text: rgba(255, 255, 255, 0.78); /* 默认态：白色但不满透明度，区分出未选中层级 */
+  --hify-sidebar-text-hover: rgba(255, 255, 255, 0.95);
+  --hify-sidebar-text-active: #ffffff;
+  --hify-sidebar-text-muted: rgba(255, 255, 255, 0.45); /* Logo 副标题、版本号这类最弱层级 */
+  --hify-sidebar-accent: var(--hify-primary-400); /* 深底上主色 600/700 太暗，选中竖线 / Logo 用更亮的 400 */
+  --hify-sidebar-accent-bar: var(--hify-primary-400); /* 选中态左侧 3px 竖线颜色，与 accent 保持同源 */
+  --hify-sidebar-width: 220px;
+  --hify-sidebar-width-collapsed: 64px;
+
+  /* ============================================================
+   * 十、圆角 Radius
+   * ============================================================ */
+  --hify-radius-none: 0;
+  --hify-radius-xs: 4px; /* 标签、复选框、小徽标 */
+  --hify-radius-sm: 6px; /* 按钮、输入框 */
+  --hify-radius-md: 8px; /* 卡片、下拉菜单、弹出层 */
+  --hify-radius-lg: 12px; /* 弹窗、大面板 */
+  --hify-radius-xl: 16px; /* 大卡片、对话气泡容器 */
+  --hify-radius-full: 9999px; /* 头像、圆形状态点、胶囊按钮 */
+
+  /* ============================================================
+   * 十一、阴影 Shadow
+   * 用中性色阶的深色（29,29,42）而非纯黑做阴影底色，浅色背景上看起来更「冷」、更贴合蓝紫主色调。
+   * ============================================================ */
+  --hify-shadow-color-rgb: 29, 29, 42;
+  --hify-shadow-xs: 0 1px 2px rgba(var(--hify-shadow-color-rgb), 0.05);
+  --hify-shadow-sm:
+    0 1px 3px rgba(var(--hify-shadow-color-rgb), 0.08), 0 1px 2px rgba(var(--hify-shadow-color-rgb), 0.05);
+  --hify-shadow-md:
+    0 4px 10px rgba(var(--hify-shadow-color-rgb), 0.08), 0 2px 4px rgba(var(--hify-shadow-color-rgb), 0.05);
+  --hify-shadow-lg:
+    0 12px 28px rgba(var(--hify-shadow-color-rgb), 0.12), 0 4px 8px rgba(var(--hify-shadow-color-rgb), 0.06);
+  --hify-shadow-xl: 0 20px 48px rgba(var(--hify-shadow-color-rgb), 0.16);
+  /* 品牌「光晕」阴影：聚焦环 / 主按钮悬浮，是本系统区别于纯灰白管理后台的标志性细节 */
+  --hify-shadow-glow-primary: 0 0 0 3px rgba(var(--hify-primary-500-rgb), 0.18);
+  --hify-shadow-glow-primary-strong: 0 8px 20px rgba(var(--hify-primary-600-rgb), 0.32);
+
+  /* ============================================================
+   * 十二、过渡动效 Motion
+   * 时长比常见管理后台组件库（通常 300ms 起步）更短，追求 Linear 那种「干脆」的操作反馈；
+   * emphasized 缓动用于位移 / 弹层出现，standard 用于颜色 / 阴影这类无位移的状态切换。
+   * ============================================================ */
+  --hify-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --hify-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --hify-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --hify-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --hify-duration-instant: 80ms; /* 复选框 / 开关这类瞬时反馈 */
+  --hify-duration-fast: 120ms; /* 悬浮态：颜色、背景色 */
+  --hify-duration-base: 180ms; /* 默认：按钮、输入框、Tab 切换 */
+  --hify-duration-slow: 240ms; /* 下拉菜单、弹层出现 */
+  --hify-duration-slower: 360ms; /* 抽屉滑出、页面级过渡 */
+
+  --hify-transition-colors:
+    color var(--hify-duration-fast) var(--hify-ease-standard),
+    background-color var(--hify-duration-fast) var(--hify-ease-standard),
+    border-color var(--hify-duration-fast) var(--hify-ease-standard);
+  --hify-transition-shadow: box-shadow var(--hify-duration-base) var(--hify-ease-standard);
+  --hify-transition-transform: transform var(--hify-duration-base) var(--hify-ease-emphasized);
+  --hify-transition-all: all var(--hify-duration-base) var(--hify-ease-standard);
+
+  /* ============================================================
+   * 十三、字体 Typography（文字色阶的配套基础设施）
+   * 全部用系统字体栈，不引入 Web Font / CDN——符合「不引入技术栈以外依赖」的约定，
+   * 也避免额外的字体加载请求拖慢管理后台首屏。中文回退到系统默认中文字体。
+   * ============================================================ */
+  --hify-font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto,
+    Helvetica, Arial, sans-serif;
+  /* 等宽字体：API Key（脱敏后）、Agent / 工具 ID、JSON 配置、工作流节点参数等技术感文本 */
+  --hify-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo, monospace;
+
+  --hify-font-size-xs: 12px;
+  --hify-font-size-sm: 13px;
+  --hify-font-size-base: 14px;
+  --hify-font-size-md: 15px;
+  --hify-font-size-lg: 16px;
+  --hify-font-size-xl: 18px;
+  --hify-font-size-2xl: 22px;
+  --hify-font-size-3xl: 28px;
+
+  --hify-font-weight-regular: 400;
+  --hify-font-weight-medium: 500;
+  --hify-font-weight-semibold: 600;
+  --hify-font-weight-bold: 700;
+
+  --hify-line-height-tight: 1.25;
+  --hify-line-height-normal: 1.5;
+  --hify-line-height-relaxed: 1.7;
+
+  /* ============================================================
+   * 十四、间距 Spacing（圆角 / 阴影的配套基础设施，4px 网格）
+   * ============================================================ */
+  --hify-space-1: 4px;
+  --hify-space-2: 8px;
+  --hify-space-3: 12px;
+  --hify-space-4: 16px;
+  --hify-space-5: 20px;
+  --hify-space-6: 24px;
+  --hify-space-8: 32px;
+  --hify-space-10: 40px;
+  --hify-space-12: 48px;
+}

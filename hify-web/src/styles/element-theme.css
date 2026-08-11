@@ -1,0 +1,117 @@
+/**
+ * Element Plus 主题映射。
+ *
+ * Element Plus 2.x 的颜色梯度（-light-3/5/7/8/9、-dark-2）是构建期由 SCSS 算出的静态色值，
+ * 写在它自带的 dist/index.css 里，不是运行时 color-mix() 出来的——只覆盖 --el-color-primary
+ * 本身，light/dark 那几档仍然是官方默认蓝色，不会跟着变。
+ * 所以这里要把用到的每一档都显式覆盖，全部引用 tokens.css 的 --hify-* 变量，
+ * 保证「调色只改 tokens.css 一处」这条设计系统的核心约定成立。
+ *
+ * 加载顺序要求：本文件必须晚于 element-plus/dist/index.css、且晚于 tokens.css 引入（见 index.css）。
+ */
+
+:root {
+  /* ---------- 品牌色：主色 → el 的 primary ---------- */
+  --el-color-primary: var(--hify-color-primary);
+  --el-color-primary-rgb: var(--hify-primary-600-rgb);
+  --el-color-primary-light-3: var(--hify-primary-400);
+  --el-color-primary-light-5: var(--hify-primary-300);
+  --el-color-primary-light-7: var(--hify-primary-200);
+  --el-color-primary-light-8: var(--hify-primary-100);
+  --el-color-primary-light-9: var(--hify-primary-50);
+  --el-color-primary-dark-2: var(--hify-primary-700);
+
+  /* ---------- 语义色：success / warning / danger(=error) / info ---------- */
+  --el-color-success: var(--hify-success-600);
+  --el-color-success-rgb: 15, 138, 62;
+  --el-color-success-light-3: var(--hify-success-500);
+  --el-color-success-light-5: var(--hify-success-200);
+  --el-color-success-light-7: var(--hify-success-100);
+  --el-color-success-light-8: var(--hify-success-100);
+  --el-color-success-light-9: var(--hify-success-50);
+  --el-color-success-dark-2: var(--hify-success-700);
+
+  --el-color-warning: var(--hify-warning-600);
+  --el-color-warning-rgb: 194, 113, 7;
+  --el-color-warning-light-3: var(--hify-warning-500);
+  --el-color-warning-light-5: var(--hify-warning-200);
+  --el-color-warning-light-7: var(--hify-warning-100);
+  --el-color-warning-light-8: var(--hify-warning-100);
+  --el-color-warning-light-9: var(--hify-warning-50);
+  --el-color-warning-dark-2: var(--hify-warning-700);
+
+  --el-color-danger: var(--hify-danger-600);
+  --el-color-danger-rgb: 194, 41, 41;
+  --el-color-danger-light-3: var(--hify-danger-500);
+  --el-color-danger-light-5: var(--hify-danger-200);
+  --el-color-danger-light-7: var(--hify-danger-100);
+  --el-color-danger-light-8: var(--hify-danger-100);
+  --el-color-danger-light-9: var(--hify-danger-50);
+  --el-color-danger-dark-2: var(--hify-danger-700);
+
+  /* error 是 danger 的别名（Element Plus 历史遗留的两个名字，值必须保持一致） */
+  --el-color-error: var(--hify-danger-600);
+  --el-color-error-rgb: 194, 41, 41;
+  --el-color-error-light-3: var(--hify-danger-500);
+  --el-color-error-light-5: var(--hify-danger-200);
+  --el-color-error-light-7: var(--hify-danger-100);
+  --el-color-error-light-8: var(--hify-danger-100);
+  --el-color-error-light-9: var(--hify-danger-50);
+  --el-color-error-dark-2: var(--hify-danger-700);
+
+  /* info 用中性色阶而非独立色相，对齐 Element Plus 官方「info = 中性灰」的语义 */
+  --el-color-info: var(--hify-color-info);
+  --el-color-info-rgb: 98, 98, 122;
+  --el-color-info-light-3: var(--hify-gray-500);
+  --el-color-info-light-5: var(--hify-gray-400);
+  --el-color-info-light-7: var(--hify-gray-300);
+  --el-color-info-light-8: var(--hify-gray-200);
+  --el-color-info-light-9: var(--hify-gray-100);
+  --el-color-info-dark-2: var(--hify-gray-700);
+
+  /* ---------- 背景 ---------- */
+  --el-bg-color: var(--hify-bg-surface);
+  --el-bg-color-page: var(--hify-bg-canvas);
+  --el-bg-color-overlay: var(--hify-bg-overlay);
+
+  /* ---------- 文字 ---------- */
+  --el-text-color-primary: var(--hify-text-heading);
+  --el-text-color-regular: var(--hify-text-body);
+  --el-text-color-secondary: var(--hify-text-muted);
+  --el-text-color-placeholder: var(--hify-text-placeholder);
+  --el-text-color-disabled: var(--hify-text-disabled);
+
+  /* ---------- 边框 ---------- */
+  --el-border-color: var(--hify-border-default);
+  --el-border-color-light: var(--hify-border-subtle);
+  --el-border-color-lighter: var(--hify-gray-100);
+  --el-border-color-extra-light: var(--hify-gray-50);
+  --el-border-color-dark: var(--hify-border-strong);
+  --el-border-color-darker: var(--hify-gray-500);
+
+  /* ---------- 填充（表格斑马纹 / 悬浮行 / 禁用底色等） ---------- */
+  --el-fill-color: var(--hify-gray-100);
+  --el-fill-color-light: var(--hify-gray-50);
+  --el-fill-color-lighter: #fbfbfd;
+  --el-fill-color-extra-light: #fdfdfe;
+  --el-fill-color-dark: var(--hify-gray-200);
+  --el-fill-color-darker: var(--hify-gray-300);
+  --el-fill-color-blank: var(--hify-gray-0);
+
+  /* ---------- 圆角 ---------- */
+  --el-border-radius-base: var(--hify-radius-sm);
+  --el-border-radius-small: var(--hify-radius-xs);
+
+  /* ---------- 阴影 ---------- */
+  --el-box-shadow: var(--hify-shadow-lg);
+  --el-box-shadow-light: var(--hify-shadow-sm);
+  --el-box-shadow-lighter: var(--hify-shadow-xs);
+  --el-box-shadow-dark: var(--hify-shadow-xl);
+
+  /* ---------- 过渡动效：比官方默认（300ms/200ms）更快，呼应 Linear 式的干脆反馈 ---------- */
+  --el-transition-duration: var(--hify-duration-base);
+  --el-transition-duration-fast: var(--hify-duration-fast);
+
+  /* ---------- 字体 ---------- */
+  --el-font-family: var(--hify-font-sans);
+}

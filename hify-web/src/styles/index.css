@@ -1,4 +1,14 @@
-/* 全局基础样式。Element Plus 自带的 CSS 变量已覆盖大部分主题需求，这里只做最小重置。 */
+/**
+ * 全局基础样式。
+ *
+ * 导入顺序不能变：tokens.css 先声明 Hify 自己的设计令牌，element-theme.css 再拿这些令牌去覆盖
+ * element-plus/dist/index.css 的默认变量（该文件在 main.ts 里于本文件之前导入，见 main.ts 注释），
+ * components.css 最后写渐变按钮 / 卡片这类变量表达不了的选择器规则。
+ * 覆盖之后，El* 组件（按钮、表格、菜单……）自动继承新的视觉风格，不需要逐个组件重写样式。
+ */
+@import './tokens.css';
+@import './element-theme.css';
+@import './components.css';
 
 * {
   box-sizing: border-box;
@@ -13,11 +23,10 @@ body,
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  color: var(--el-text-color-primary);
+  font-family: var(--hify-font-sans);
+  font-size: var(--hify-font-size-base);
+  color: var(--hify-text-body);
+  background-color: var(--hify-bg-canvas);
 }
 
 a {
